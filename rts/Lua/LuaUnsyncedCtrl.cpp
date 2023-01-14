@@ -2636,6 +2636,33 @@ int LuaUnsyncedCtrl::GiveOrderToUnitArray(lua_State* L)
 }
 
 
+int LuaUnsyncedCtrl::GiveOrderArrayToUnit(lua_State* L)
+{
+	if (!CanGiveOrders(L)) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	const CUnit* const unit = ParseCtrlUnit(L, __func__, 1);
+	if (unit == nullptr || unit->noSelect) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	vector<int> unitIDs {unit->id};
+
+	vector<Command> commands;
+	LuaUtils::ParseCommandArray(L, __func__, 2, commands);
+	if (commands.empty()) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	selectedUnitsHandler.SendCommandsToUnits(unitIDs, commands);
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+
 int LuaUnsyncedCtrl::GiveOrderArrayToUnitMap(lua_State* L)
 {
 	if (!CanGiveOrders(L)) {
