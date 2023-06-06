@@ -2149,10 +2149,9 @@ int LuaSyncedCtrl::SetUnitWeaponState(lua_State* L)
 			}
 		}
 	} else {
-		// key, value
-		if (lua_israwstring(L, 3) && lua_isnumber(L, 4)) {
-			SetSingleUnitWeaponState(L, weapon, 3);
-		}
+		// key, value[, key2, value2[, ...]]
+		for (int index = 3; lua_israwstring(L, index) && lua_isnumber(L, index + 1); index += 2)
+			SetSingleUnitWeaponState(L, weapon, index);
 	}
 
 	return 0;
@@ -2297,10 +2296,9 @@ int LuaSyncedCtrl::SetUnitWeaponDamages(lua_State* L)
 			}
 		}
 	} else {
-		// key, value
-		if ((lua_isnumber(L, 3) || lua_israwstring(L, 3)) && lua_isnumber(L, 4)) {
-			SetSingleDynDamagesKey(L, damages, 3);
-		}
+		// key, value[, key2, value2[, ...]]
+		for (int index = 3; (lua_isnumber(L, index) || lua_israwstring(L, index)) && lua_isnumber(L, index + 1); index += 2)
+			SetSingleDynDamagesKey(L, damages, index);
 	}
 
 	return 0;
