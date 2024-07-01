@@ -487,7 +487,7 @@ void CWeapon::UpdateFire()
 	reloadStatus = gs->frameNum + int(reloadTime / owner->reloadSpeed);
 
 	salvoLeft = salvoSize;
-	nextSalvo = gs->frameNum;
+	nextSalvo = gs->frameNum + salvoWindup;
 	salvoError = gsRNG.NextVector() * (owner->IsMoving()? weaponDef->movingAccuracy: accuracyError);
 
 	owner->lastMuzzleFlameSize = muzzleFlareSize;
