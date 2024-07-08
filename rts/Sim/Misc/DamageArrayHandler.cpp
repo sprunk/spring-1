@@ -25,64 +25,31 @@ CR_REG_METADATA(CDamageArrayHandler, (
 
 
 CDamageArrayHandler damageArrayHandler;
+static constexpr int DEFAULT_ARMOR_ID = 0;
 
-
-void CDamageArrayHandler::Init(LuaParser* defsParser)
+void CDamageArrayHandler::Init(std::vector <UnitDef> & unitDefs)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
-	#define DEFAULT_ARMORDEF_NAME "default"
 
-	try {
-		const LuaTable rootTable = defsParser->GetRoot().SubTable("ArmorDefs");
+	armorDefNameIdxMap.clear();
+	armorDefNameIdxMap.insert({"default", DEFAULT_ARMOR_ID});
 
-		if (!rootTable.IsValid())
-			throw content_error("Error loading ArmorDefs");
-
-		// GetKeys() sorts the keys, so can not simply push_back before call
-		rootTable.GetKeys(armorDefKeys);
-		armorDefKeys.insert(armorDefKeys.begin(), DEFAULT_ARMORDEF_NAME);
-
-		armorDefNameIdxMap[DEFAULT_ARMORDEF_NAME] = 0;
-
-		LOG("[%s] number of ArmorDefs: " _STPF_, __FUNCTION__, armorDefKeys.size());
-
-		// expects the following structure, subtables must be in array-format:
-		// {"tanks" = {[1] = "supertank", [2] = "megatank"}, "infantry" = {[1] = "dude"}, ...}
-		for (unsigned int armorDefIdx = 1; armorDefIdx < armorDefKeys.size(); armorDefIdx++) {
-			const std::string armorDefName = StringToLower(armorDefKeys[armorDefIdx]);
-
-			if (armorDefName == DEFAULT_ARMORDEF_NAME) {
-				// ignore, no need to clear entire table
-				LOG_L(L_WARNING, "[%s] ArmorDefs: tried to define the \"%s\" armor type!", __FUNCTION__, DEFAULT_ARMORDEF_NAME);
-				continue;
-			}
-
-			armorDefNameIdxMap[armorDefName] = armorDefIdx;
-
-			const LuaTable armorDefTable = rootTable.SubTable(armorDefKeys[armorDefIdx]);
-			const unsigned int numArmorDefEntries = armorDefTable.GetLength();
-
-			for (unsigned int armorDefEntryIdx = 0; armorDefEntryIdx < numArmorDefEntries; armorDefEntryIdx++) {
-				const std::string& unitDefName = StringToLower(armorDefTable.GetString(armorDefEntryIdx + 1, ""));
-				const auto armorDefTableIt = armorDefNameIdxMap.find(unitDefName);
-
-				if (armorDefTableIt == armorDefNameIdxMap.end()) {
-					armorDefNameIdxMap[unitDefName] = armorDefIdx;
-					continue;
-				}
-
-				LOG_L(L_WARNING,
-					"[%s] UnitDef \"%s\" in ArmorDef \"%s\" already belongs to ArmorDef category %d!",
-					__FUNCTION__, unitDefName.c_str(), armorDefName.c_str(), armorDefTableIt->second);
-			}
+	int armorID = 1;
+	for (auto &unitDef : unitDefs) {
+		if (unitDef.armorName == "") {
+			unitDef.armorType = DEFAULT_ARMOR_ID;
+			continue;
 		}
-	} catch (const content_error&) {
-		armorDefNameIdxMap.clear();
-		armorDefNameIdxMap[DEFAULT_ARMORDEF_NAME] = 0;
 
-		armorDefKeys.clear();
-		armorDefKeys.push_back(DEFAULT_ARMORDEF_NAME);
+		const auto [it, inserted] = armorDefNameIdxMap.insert({unitDef.armorName, armorID});
+		if (inserted)
+			++ armorID;
+		unitDef.armorType = it->second;
 	}
+
+	LOG_L(L_INFO, "number of ArmorDefs: " _STPF_, __FUNCTION__, armorDefNameIdxMap.size());
+	for (const auto &unitDef : unitDefs)
+		LOG_L(L_DEBUG, "armortype for \"%s\": \"%s\" -> %d", unitDef.name, unitDef.armorName, unitDef.armorType);
 }
 
 
